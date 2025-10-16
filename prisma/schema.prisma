@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  password  String   // Hashed with bcrypt
+  name      String
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  clients      Client[]
+  credentials  Credential[]
+  createdStaff User[] @relation("StaffCreatedBy")
+  createdBy    User?   @relation("StaffCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdById  String? @db.ObjectId
+  pdfConfig    PDFConfig?
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+model Client {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  clientName   String
+  contactPerson String
+  address      String
+  notes        String?
+  email        String?
+  phone        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    String
+  createdById  String   @db.ObjectId
+
+  // Relations
+  createdByUser User         @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  credentials   Credential[]
+
+  @@map("clients")
+}
+
+model Credential {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  clientId      String   @db.ObjectId
+  clientName    String
+  serviceName   String
+  username      String
+  password      String   // Encrypted
+  url           String?  // For general credentials
+  notes         String?
+  credentialType String  @default("general") // "general" or "email"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastAccessedAt DateTime?
+  createdBy     String?
+  createdById   String?  @db.ObjectId
+
+  // Relations
+  client      Client @relation(fields: [clientId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdByUser User?  @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("credentials")
+}
+
+model PDFConfig {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @unique @db.ObjectId
+  companyName   String
+  companyLogo   String?  // Base64 encoded
+  companyAddress String
+  companyPhone  String?
+  companyEmail  String?
+  companyWebsite String?
+  primaryColor  String   @default("#2563eb")
+  secondaryColor String  @default("#64748b")
+  fontFamily    String   @default("Helvetica")
+  greeting      String   @default("Dear Valued Client,")
+  closing       String   @default("Thank you for your business.\n\nBest regards,\nYour Company Team")
+  includeTimestamp Boolean @default(true)
+  includePageNumbers Boolean @default(true)
+  watermark     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("pdf_configs")
+}
+
+model AuditLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  action    String   // CREATE, UPDATE, DELETE, EXPORT, LOGIN, etc.
+  resource  String   // USER, CLIENT, CREDENTIAL, PDF, etc.
+  resourceId String?
+  details   Json?    // Additional details about the action
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("audit_logs")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
