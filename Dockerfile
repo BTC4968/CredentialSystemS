@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -31,6 +31,10 @@ ENV NODE_ENV production
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
+
+# runner stage
+COPY --from=builder /app/node_modules ./node_modules
+
 
 # Copy built application
 COPY --from=builder /app/public ./public
