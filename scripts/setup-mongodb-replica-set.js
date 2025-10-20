@@ -1,7 +1,7 @@
 const { MongoClient } = require('mongodb');
 
 async function setupReplicaSet() {
-  const client = new MongoClient(process.env.DATABASE_URL || 'mongodb://localhost:27017');
+  const client = new MongoClient(process.env.DATABASE_URL || 'mongodb+srv://credential:9JZNSeefghYHvEAJ@cluster0.z9vyqgn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0');
   
   try {
     await client.connect();
