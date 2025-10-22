@@ -18,7 +18,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Connect to MongoDB
-    await client.connect();
+    try {
+      await client.connect();
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Failed to connect to MongoDB' },
+        { status: 500 }
+      );
+    }
+
     const db = client.db('credential_manager');
     const usersCollection = db.collection('users');
 
